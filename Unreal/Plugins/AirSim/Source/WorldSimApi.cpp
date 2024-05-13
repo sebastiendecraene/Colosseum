@@ -39,6 +39,8 @@ bool WorldSimApi::loadLevel(const std::string& level_name)
     return success;
 }
 
+
+
 void WorldSimApi::spawnPlayer()
 {
     using namespace std::chrono_literals;
@@ -188,6 +190,38 @@ bool WorldSimApi::setLightIntensity(const std::string& light_name, float intensi
     },
                                              true);
     return result;
+}
+
+void WorldSimApi::simGeneratePath()
+{
+    std::cout << "Generate path toggled" << std::endl;
+    FString asset_name("BP_Cube");
+    FAssetData* load_asset = simmode_->asset_map.Find(asset_name);
+
+    if (!load_asset->IsValid()) {
+        throw std::invalid_argument("There were no objects with name Cube found in the Registry");
+    }
+
+    UAirBlueprintLib::RunCommandOnGameThread([this, &load_asset]() {
+        // Get a reference to the game world
+        UWorld* const World = simmode_->GetWorld();
+
+        if (World) {
+
+            // Define spawn parameters
+            FActorSpawnParameters SpawnParams;
+
+            // Set the spawn location, rotation, and scale
+            FVector SpawnLocation = FVector(0.0f, 0.0f, 0.0f);
+            FRotator SpawnRotation = FRotator::ZeroRotator;
+
+            // Spawn the cube
+            UBlueprint* LoadObject = Cast<UBlueprint>(load_asset->GetAsset());
+            UClass* new_bp = static_cast<UClass*>(LoadObject->GeneratedClass);
+            AActor* new_actor = World->SpawnActor<AActor>(new_bp, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+        }
+    },
+                                             true);
 }
 
 bool WorldSimApi::createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file)

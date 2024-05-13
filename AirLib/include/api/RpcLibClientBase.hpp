@@ -147,6 +147,7 @@ namespace airlib
         void simSetCameraPose(const std::string& camera_name, const Pose& pose, const std::string& vehicle_name = "", bool external = false);
         void simSetCameraFov(const std::string& camera_name, float fov_degrees, const std::string& vehicle_name = "", bool external = false);
 
+        void simGeneratePath();
         bool simCreateVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file);
         msr::airlib::Kinematics::State simGetGroundTruthKinematics(const std::string& vehicle_name = "") const;
         void simSetKinematics(const Kinematics::State& state, bool ignore_collision, const std::string& vehicle_name = "");

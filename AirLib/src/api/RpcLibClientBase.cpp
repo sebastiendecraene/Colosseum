@@ -573,6 +573,11 @@ __pragma(warning(disable : 4239))
             return pimpl_->client.call("simGetGroundTruthEnvironment", vehicle_name).as<RpcLibAdaptorsBase::EnvironmentState>().to();
             ;
         }
+
+        void RpcLibClientBase::simGeneratePath() {
+            pimpl_->client.call("simGeneratePath");
+        }
+
         bool RpcLibClientBase::simCreateVoxelGrid(const msr::airlib::Vector3r& position, const int& x, const int& y, const int& z, const float& res, const std::string& output_file)
         {
             return pimpl_->client.call("simCreateVoxelGrid", RpcLibAdaptorsBase::Vector3r(position), x, y, z, res, output_file).as<bool>();

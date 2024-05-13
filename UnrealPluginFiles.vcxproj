@@ -98,6 +98,7 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="PathGenerator.cpp" />
     <ClCompile Include="unreal\plugins\airsim\source\AirBlueprintLib.cpp" />
     <ClCompile Include="unreal\plugins\airsim\source\AirSim.cpp" />
     <ClCompile Include="unreal\plugins\airsim\source\AirSimGameMode.cpp" />
@@ -132,6 +133,7 @@
     <ClCompile Include="Unreal\Plugins\AirSim\Source\WorldSimApi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PathGenerator.h" />
     <ClInclude Include="unreal\plugins\airsim\source\AirBlueprintLib.h" />
     <ClInclude Include="unreal\plugins\airsim\source\AirSim.h" />
     <ClInclude Include="unreal\plugins\airsim\source\AirSimGameMode.h" />
