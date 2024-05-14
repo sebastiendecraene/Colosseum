@@ -574,8 +574,9 @@ __pragma(warning(disable : 4239))
             ;
         }
 
-        void RpcLibClientBase::simGeneratePath() {
-            pimpl_->client.call("simGeneratePath");
+        vector<string> RpcLibClientBase::simGeneratePath(double height, double length)
+        {
+            return pimpl_->client.call("simGeneratePath", height, length).as<vector<string>>();
         }
 
         bool RpcLibClientBase::simCreateVoxelGrid(const msr::airlib::Vector3r& position, const int& x, const int& y, const int& z, const float& res, const std::string& output_file)

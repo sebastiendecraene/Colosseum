@@ -192,17 +192,17 @@ bool WorldSimApi::setLightIntensity(const std::string& light_name, float intensi
     return result;
 }
 
-void WorldSimApi::simGeneratePath()
+FString WorldSimApi::generateRewardCube(FVector SpawnLocation, FRotator SpawnRotation)
 {
-    std::cout << "Generate path toggled" << std::endl;
     FString asset_name("BP_Cube");
+    FString* generateActorName = new FString();
     FAssetData* load_asset = simmode_->asset_map.Find(asset_name);
 
     if (!load_asset->IsValid()) {
         throw std::invalid_argument("There were no objects with name Cube found in the Registry");
     }
 
-    UAirBlueprintLib::RunCommandOnGameThread([this, &load_asset]() {
+    UAirBlueprintLib::RunCommandOnGameThread([this, &load_asset, SpawnLocation, SpawnRotation, &generateActorName]() {
         // Get a reference to the game world
         UWorld* const World = simmode_->GetWorld();
 
@@ -211,17 +211,151 @@ void WorldSimApi::simGeneratePath()
             // Define spawn parameters
             FActorSpawnParameters SpawnParams;
 
-            // Set the spawn location, rotation, and scale
-            FVector SpawnLocation = FVector(0.0f, 0.0f, 0.0f);
-            FRotator SpawnRotation = FRotator::ZeroRotator;
+            // Spawn the cube
+            UBlueprint* LoadObject = Cast<UBlueprint>(load_asset->GetAsset());
+            UClass* new_bp = static_cast<UClass*>(LoadObject->GeneratedClass);
+            AActor* new_actor = World->SpawnActor<AActor>(new_bp, SpawnLocation, SpawnRotation, SpawnParams);
+
+            // Get the unique ID of the spawned actor
+            int32 UniqueID = new_actor->GetUniqueID();
+
+            // Get the name of the spawned actor
+            FString ActorName = new_actor->GetName();
+
+            // Print the unique ID and name to the output log
+
+            *generateActorName = ActorName;
+        }
+    },
+                                             true);
+
+    FString result = *generateActorName;
+
+    delete generateActorName;
+
+    return result;
+}
+
+void WorldSimApi::generateLineSegment(FVector SpawnLocation, FRotator SpawnRotation)
+{
+    FString asset_name("BP_LineSegment");
+    FAssetData* load_asset = simmode_->asset_map.Find(asset_name);
+
+    if (!load_asset->IsValid()) {
+        throw std::invalid_argument("There were no objects with name BP_LineSegment found in the Registry");
+    }
+
+    UAirBlueprintLib::RunCommandOnGameThread([this, &load_asset, SpawnLocation, SpawnRotation]() {
+        // Get a reference to the game world
+        UWorld* const World = simmode_->GetWorld();
+
+        if (World) {
+
+            // Define spawn parameters
+            FActorSpawnParameters SpawnParams;
 
             // Spawn the cube
             UBlueprint* LoadObject = Cast<UBlueprint>(load_asset->GetAsset());
             UClass* new_bp = static_cast<UClass*>(LoadObject->GeneratedClass);
-            AActor* new_actor = World->SpawnActor<AActor>(new_bp, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+            AActor* new_actor = World->SpawnActor<AActor>(new_bp, SpawnLocation, SpawnRotation, SpawnParams);
         }
     },
                                              true);
+}
+
+void WorldSimApi::removeAllActorsByClassName(FString ClassName)
+{
+    // Construct the full class name with the "_C" suffix typically used for blueprint classes
+    FString FullClassName = ClassName + TEXT("_C");
+
+    // Find the UClass of the blueprint
+    UClass* BlueprintClass = FindObject<UClass>(ANY_PACKAGE, *FullClassName);
+    if (!BlueprintClass) {
+        UE_LOG(LogTemp, Warning, TEXT("Class %s not found."), *FullClassName);
+        return;
+    }
+
+    UAirBlueprintLib::RunCommandOnGameThread([this, &BlueprintClass]() {
+        // Ensure you have a valid world context
+        UWorld* const World = simmode_->GetWorld();
+        if (!World) {
+            UE_LOG(LogTemp, Warning, TEXT("World context is invalid."));
+            return;
+        }
+
+        // Iterate over all actors of the specified class and destroy them
+        for (TActorIterator<AActor> It(World, BlueprintClass); It; ++It) {
+            AActor* Actor = *It;
+            if (Actor) {
+                // Destroy the actor
+                Actor->Destroy();
+                UE_LOG(LogTemp, Log, TEXT("Destroyed actor: %s"), *Actor->GetName());
+            }
+        }
+    },
+                                             true);
+}
+
+std::vector<std::string> WorldSimApi::simGeneratePath(double height, double length)
+{
+    std::vector<std::string> cube_path;
+    std::cout << "Generate path toggled" << std::endl;
+
+    // Remove all existing paths
+    this->removeAllActorsByClassName(FString("BP_Cube"));
+    this->removeAllActorsByClassName(FString("BP_LineSegment"));
+
+    FVector SpawnLocation = FVector(0.0, 0.0, -100.0);
+    FRotator SpawnRotation = FRotator::ZeroRotator;
+
+    double line_length = 50.0;
+    double food_height = 50.0;
+    double max_path_height = height;
+    double path_length = length;
+
+    // Generate line on the floor
+    while (SpawnLocation[0] < path_length) {
+        this->generateLineSegment(SpawnLocation, SpawnRotation);
+        SpawnLocation += FVector(line_length, 0.0, 0.0);
+    }
+
+    // Reset the location and rotation
+    SpawnLocation = FVector(0.0, 0.0, 0.0);
+    SpawnRotation = FRotator::ZeroRotator;
+
+    // Generate going up path
+    double number_of_up_blocks = max_path_height / food_height;
+    for (int i = 0; i < number_of_up_blocks; i += 1) {
+        FString ActorName = this->generateRewardCube(SpawnLocation, SpawnRotation);
+
+        UE_LOG(LogTemp, Log, TEXT("Spawned Actor Name: %s"), *ActorName);
+        cube_path.push_back(TCHAR_TO_UTF8(*ActorName));
+
+        SpawnLocation += FVector(0.0, 0.0, food_height);
+    }
+
+    // Generate straight path
+    while (SpawnLocation[0] < path_length) {
+        FString ActorName = this->generateRewardCube(SpawnLocation, SpawnRotation);
+
+        UE_LOG(LogTemp, Log, TEXT("Spawned Actor Name: %s"), *ActorName);
+        cube_path.push_back(TCHAR_TO_UTF8(*ActorName));
+
+        SpawnLocation += FVector(food_height, 0.0, 0.0);
+    }
+
+    for (int i = 0; i < number_of_up_blocks + 1; i += 1) {
+        FString ActorName = this->generateRewardCube(SpawnLocation, SpawnRotation);
+
+        UE_LOG(LogTemp, Log, TEXT("Spawned Actor Name: %s"), *ActorName);
+        // std::string value(TCHAR_TO_UTF8(*ActorName));
+        cube_path.push_back(TCHAR_TO_UTF8(*ActorName));
+
+        // Increase X of the cube
+        SpawnLocation -= FVector(0.0, 0.0, food_height);
+    }
+
+    return cube_path;
 }
 
 bool WorldSimApi::createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file)

@@ -460,8 +460,8 @@ namespace airlib
             return RpcLibAdaptorsBase::EnvironmentState(result);
         });
 
-        pimpl_->server.bind("simGeneratePath", [&]() -> void {
-            getWorldSimApi()->simGeneratePath();
+        pimpl_->server.bind("simGeneratePath", [&](double height, double length) -> vector<string> {
+            return getWorldSimApi()->simGeneratePath(height, length);
         });
 
         pimpl_->server.bind("simCreateVoxelGrid", [&](const RpcLibAdaptorsBase::Vector3r& position, const int& x, const int& y, const int& z, const float& res, const std::string& output_file) -> bool {

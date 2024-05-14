@@ -78,7 +78,9 @@ public:
     virtual void setWind(const Vector3r& wind) const override;
     virtual void setExtForce(const Vector3r& ext_force) const override;
 
-    virtual void simGeneratePath() override;
+    virtual std::vector<std::string> simGeneratePath(double height, double length) override;
+
+
     virtual bool createVoxelGrid(const Vector3r& position, const int& x_size, const int& y_size, const int& z_size, const float& res, const std::string& output_file) override;
     virtual std::vector<std::string> listVehicles() const override;
 
@@ -126,6 +128,11 @@ private:
     AActor* createNewStaticMeshActor(const FActorSpawnParameters& spawn_params, const FTransform& actor_transform, const Vector3r& scale, UStaticMesh* static_mesh);
     AActor* createNewBPActor(const FActorSpawnParameters& spawn_params, const FTransform& actor_transform, const Vector3r& scale, UBlueprint* blueprint);
     void spawnPlayer();
+
+    FString generateRewardCube(FVector SpawnLocation, FRotator SpawnRotation);
+    void generateLineSegment(FVector SpawnLocation, FRotator SpawnRotation);
+    void removeAllActorsByClassName(FString ClassName);
+
 
 private:
     ASimModeBase* simmode_;
